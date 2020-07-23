@@ -1,1 +1,1 @@
-## This is a markdown file
+Hello! This repo is designated for working projects on the Data Science Specialization course at Coursera
