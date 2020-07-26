@@ -1,7 +1,7 @@
 # Getting-and-Cleaning-Data-Assignment
 
 ## About this repository
-The repo has been created to finish the last week assignment of the Getting and Cleaning Data course of Data Science Specialization on Coursera
+The folder has been created to finish the last week assignment of the Getting and Cleaning Data course of Data Science Specialization on Coursera
 
 ## Data description
 The data belongs to [UCI Machine Learning Repository: Human Activity Recognition Using Smartphones Data Set](http://archive.ics.uci.edu/ml/datasets/Human+Activity+Recognition+Using+Smartphones)
