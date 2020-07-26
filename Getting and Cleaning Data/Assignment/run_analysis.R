@@ -37,7 +37,7 @@ train <- cbind(train, subjectTrain, labTrain)
 # combining
 whole <- rbind(train, test)
 
-# Changing labels index into the full title
+# Changing acitivities index into the full title
 whole$Activity <- sapply(whole$Activity, function(x){x <- activity_labels[x]})
 
 # Selecting measurements on the mean and sd of the each measurement
