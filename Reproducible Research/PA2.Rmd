@@ -1,0 +1,186 @@
+---
+title: "Storm impact on the US population health and economy"
+output:
+  html_document:
+    df_print: paged
+---
+# Synopsis
+In the current research the main goal was to apply reproducible research knowledge
+into the storms dataset. There were 2 main questions: which storm events affect the most on the public health and witch storm events affect the US economy the most. Results showed, that there are 15 which events, that cover more that 80% of all the impact on the public health and the US economy
+
+
+# Introduction 
+
+Before the data processing, first, specify the global options to show 
+all the code and results
+
+```{r setoptions}
+library(knitr)
+library(dplyr)
+opts_chunk$set(echo = TRUE, results = TRUE)
+```
+
+# Data processing
+
+The data for this assignment come in the form of a comma-separated-value file compressed via the bzip2 algorithm to reduce its size
+
+```{r datadownlod, cache=TRUE}
+fileUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+fileDest <- ("storm_data.csv.bz2")
+if(!file.exists(fileDest)){
+  download.file(fileUrl, fileDest)
+}
+storm <- read.csv("storm_data.csv.bz2")
+```
+
+
+# Data manipulation
+
+## Most harmful storm events on the population health
+
+
+Before analyzing, count the unique values of event types (EVTYPEs)
+
+```{r uniquetypes, cache= TRUE}
+length(unique(storm$EVTYPE))
+```
+
+Almost a thousand, which is many. Let's count total injuries and fatal cases per each type and sort the result by descending order or fatal cases.
+
+```{r by_type}
+by_type <- storm %>%
+  group_by(EVTYPE) %>%
+  summarise(sum(INJURIES), sum(FATALITIES)) %>%
+  rename(fatal = 'sum(FATALITIES)', injury = 'sum(INJURIES)') %>%
+  filter(fatal != 0, injury !=0) %>%
+  arrange(desc(fatal, injury))
+head(by_type)
+
+```
+To better understand the distribution of fatal cases, we can plot them.
+
+```{r plotting_by_type}
+plot(by_type$fatal, pch = 19, ylab = "fatal cases", xlab= "Event index", 
+     main = "Distribution of fatal cases by event types")
+```
+
+From the plot, we see there are several event types, that has the most of fatal cases.
+To get the list of the events, that have the most impact, I will be using 80% rule,
+keep those types, that in total produce 80% of all the fatal cases.
+
+Also, because only several events cover most of the distribution, there is no need to wrangle with other names of events.
+
+```{r topfatal}
+topfatal <- by_type %>% 
+  mutate(cumsum.prop = cumsum(fatal)/sum(fatal)) %>%
+  filter(cumsum.prop <= 0.8)
+topfatal
+```
+
+Thus, only `r nrow(topfatal)` event types fit into the criteria and become most harmful on the population health, namely: `r tolower(topfatal$EVTYPE) `.
+
+## Most harmful storm events on the US economy
+
+In this section we will be calculating the impact on the economy by looking at the
+property and crop damage.
+
+First we need to prepare the data to be proceeded.
+
+```{r subsetting economydmg}
+economydmg <- select(storm, EVTYPE, PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP) %>%
+  filter(PROPDMG != 0 | CROPDMG != 0)
+economydmg
+unique(economydmg$PROPDMGEXP, economydmg)
+```
+
+Because the data has an exponent value, we need to create 2 new features, that multiply initial number into the exponent, where B or b = Billion, M or m = Million, K or k = Thousand, H or h = Hundred
+
+Calculating property damage
+
+```{r calculating propdmgcomb}
+propdmgcomb <- c()
+for (i in 1:nrow(economydmg)){
+  if(economydmg$PROPDMGEXP[i] == "K"){
+    propdmgcomb[i] <- economydmg$PROPDMG[i] * 1000
+  } else if(economydmg$PROPDMGEXP[i] == "m" | economydmg$PROPDMGEXP[i] == "M"){
+    propdmgcomb[i] <- economydmg$PROPDMG[i] * 1000000
+  } else if(economydmg$PROPDMG[i] == "B"){
+    propdmgcomb[i] <- economydmg$PROPDMG[i] * 1000000000
+  } else if(economydmg$PROPDMG[i] == "h" | economydmg$PROPDMG[i] == "H"){
+    propdmgcomb[i] <- economydmg$PROPDMG[i] * 100
+  } else {
+    propdmgcomb[i] <- economydmg$PROPDMG[i]
+  }
+}
+summary(propdmgcomb)
+```
+
+Calculating crop damage
+
+```{r caltulating cropdmgcomb}
+cropdmgcomb <- c()
+for (i in 1:nrow(economydmg)){
+  if(economydmg$CROPDMGEXP[i] == "K"){
+    cropdmgcomb[i] <- economydmg$CROPDMG[i] * 1000
+  } else if(economydmg$CROPDMGEXP[i] == "m" | economydmg$CROPDMGEXP[i] == "M"){
+    cropdmgcomb[i] <- economydmg$CROPDMG[i] * 1000000
+  } else if(economydmg$CROPDMGEXP[i] == "B"){
+    cropdmgcomb[i] <- economydmg$CROPDMG[i] * 1000000000
+  } else if(economydmg$CROPDMGEXP[i] == "h" | economydmg$CROPDMGEXP[i] == "H"){
+    cropdmgcomb[i] <- economydmg$CROPDMG[i] * 100
+  } else {
+    cropdmgcomb[i] <- economydmg$CROPDMG[i]
+  }
+}
+summary(cropdmgcomb)
+```
+Now combine resulted vectors with an *economydmg* dataset
+
+```{r append total damage}
+economydmg <- cbind(economydmg, propdmgcomb, cropdmgcomb)
+names(economydmg)
+```
+Finally, calculate which storm type affect more on the economy by property damage
+and crop damage, and create a new feature, that combines them together.
+```{r}
+totdamage <- economydmg %>%
+  group_by(EVTYPE) %>%
+  summarise(sum(propdmgcomb), sum(cropdmgcomb)) %>%
+  rename(propdmgtot = 'sum(propdmgcomb)', cropdmgtot = 'sum(cropdmgcomb)') %>%
+  mutate(totaldmg = propdmgtot + cropdmgtot) %>%
+  arrange(-totaldmg)
+totdamage
+```
+
+Now use the Pareto 80% rule to get a list of the most influential storm types
+
+```{r}
+pareto_economy <- totdamage %>%
+  mutate(dmg_cumsumprop = cumsum(totaldmg)/sum(totaldmg)) %>%
+  filter(dmg_cumsumprop <= 0.8)
+```
+
+And make a plot with the final list
+
+```{r}
+par(mar=c(8,5.5,3,2))
+barplot(pareto_economy$totaldmg, names.arg = tolower(pareto_economy$EVTYPE), las = 2, main = "Storm types that affect the economy the most")
+title(ylab="Damage", mgp=c(4,1,0))
+```
+
+
+# Results
+
+In the research we have found, that 9 storm types affect nearly 80% of public health. And similarly, 9 types affect 80 economy damage In the table you can see
+final results
+
+```{r}
+combine_result <- data.frame(rank = seq(1:9), Public.Health = topfatal$EVTYPE, 
+           Economy.Damage = pareto_economy$EVTYPE)
+inter <- intersect(combine_result$Public.Health, combine_result$Economy.Damage)
+length(unique(c(topfatal$EVTYPE, pareto_economy$EVTYPE)))
+combine_result
+```
+
+There are 15 events, that cover more than 80% of all the public health and US economy together. But only `r length(combine_result)` of them appear in the top 9 lists, that are:
+`r inter`
