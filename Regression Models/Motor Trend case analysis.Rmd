@@ -1,0 +1,126 @@
+---
+title: "Motor Trend case analysis"
+author: "Michael Lagunov"
+date: "8/24/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Main part
+## Introduciton
+
+Motor Trend, a magazine about the automobile industry, is interested in exploring the relationship between a set of variables and miles per gallon (MPG) (outcome). They are particularly interested in the following two questions:
+
+1. “Is an automatic or manual transmission better for MPG”
+2. "Quantify the MPG difference between automatic and manual transmissions"
+
+## Libraries and data loading
+```{r libraries, results = "hide", message=FALSE}
+library(ggplot2)
+library(dplyr)
+library(wesanderson)
+data(mtcars)
+```
+
+## Exploratory data analysis
+
+Before modeling, provide basic data exploration, to understand it better
+```{r}
+str(mtcars)
+```
+
+From the str function the one can mention, that all the features are numeric, so we will have to transform them into the factors. That is about variables "vs", that stands for the v-shaped and straight engines respectively and "am" for transmission, automatic (0) and manual (1).
+
+Transform them into factors
+```{r}
+mtcars$vs <- as.factor(mtcars$vs)
+mtcars$am <- as.factor(mtcars$am)
+levels(mtcars$am) <-c("Automatic", "Manual")
+```
+
+
+From the boxplot (see the appendix) above manual transmission tends to have more MPG than automatic. Let's see whether the difference is significant by using t.test (see appendix for summary)
+
+```{r}
+a_trans <- filter(mtcars, am == "Automatic")
+m_trans <- filter(mtcars, am == "Manual")
+ttest <- t.test(a_trans$mpg, m_trans$mpg)
+```
+p-value is less that 0.05, thus we reject the null hypothesis, and state that the difference is significant and manual transmission is better for MPG than automatic.
+
+
+## Regresssion analysis
+
+At first, let's make a regression using only transmission type as an predictor.
+
+```{r}
+fit1 <- lm(mpg ~ am-1, mtcars)
+```
+Residual standard error is 4.9 with the R-squared of 0.36. For the whole summary see the appendix 2.
+
+Now let's try to find a better combination of factors using "step" function, that is using AIC approach.
+
+```{r}
+fit2 <- step(lm(data = mtcars, mpg ~ .), trace=0)
+```
+The new model looks much better, with the formula = mpg ~ wt + qsec + am, residual error reduced by double and multiple R-squared of 0.85. For the whole summary see the appendix 3.
+
+Provide an analysis of variance for the fit1 and fit2 models to see if the second is significantly better (see appendix for summary)
+
+```{r}
+ano_res <- anova(fit1,fit2)
+```
+The second model is significantly much better than the initial. Examine the second model deeper. From the estimates, we can see, that weight has negative effect, whereas all the other features has positive. Per each 1000 lbs of the weight the estimate mpg is reduced by almost 4. Qsec represent 1/4 smile time and for each of the unit mpg is increased by 1.2. And lastly, manual transmission is 2.9 mpg better than the automatic. For the residual plots see the appendix.
+
+
+## Conclusion
+
+In this analysis, I found, that the manual transmission is significantly better than automatic for MPG with the p-value of 0.0013. The best regression has been received by using the following formula = mpg ~ wt + qsec + am. Manual transmission is 2.9 mpg better than the automatic under this regression model.
+
+\newpage
+# Appendix
+
+### MPG difference between automatic and manual transmissions
+
+```{r, fig.height= 4}
+ggplot(mtcars, aes(am, mpg, fill = am)) +
+    geom_boxplot() +
+    scale_fill_manual(values=wes_palette(n=2, name="BottleRocket2")) +
+    ggtitle("MPG difference between automatic and manual transmissions") +
+    xlab("Transmission type") +
+    theme_minimal()
+```
+
+### Summary of the t.test
+```{r}
+ttest
+```
+
+
+### Summary of the fit1 model
+
+```{r}
+summary(fit1)
+```
+
+### Summary of the fit2 model
+
+```{r}
+summary(fit2)
+```
+
+### Regression residual and diagnostic plots
+
+There is some correlation in the plot1, and the right part of the qq plot is dipped. I may be improved by using more data
+```{r}
+par(mfrow = c(2,2))
+plot(fit2)
+```
+
+### Summary of the analysis of models variance
+
+```{r}
+ano_res
+```
+
