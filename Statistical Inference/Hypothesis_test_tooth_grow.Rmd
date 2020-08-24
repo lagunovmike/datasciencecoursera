@@ -1,0 +1,102 @@
+---
+title: "Hypothersis test on ToothGrowth data"
+author: "Michael Lagunov"
+date: "8/15/2020"
+output: pdf_document
+---
+
+## Synopsis
+
+In this part an exploratory and hypothesis test analysis conducted on the Tooth Growth dataset.
+
+The dataset shows is the length of odontoblasts (cells responsible for tooth growth) in 60 guinea pigs. Each animal received one of three dose levels of vitamin C (0.5, 1, and 2 mg/day) by one of two delivery methods, orange juice or ascorbic acid (a form of vitamin C and coded as VC) (From the help page)
+
+## Data and libraries setting
+```{r}
+knitr::opts_chunk$set(echo = TRUE, dev = "cairo_pdf")
+library(ggplot2) #beautiful plot
+library(kableExtra) #beautiful table
+library(extrafont) #Times New Roman font for the plot
+loadfonts(device = "win", quiet = TRUE) #for extrafont
+
+data(ToothGrowth)
+```
+## Exploring Analysis
+
+
+First, see the dimensions and structure using dim and stf functions respectively
+```{r}
+dim(ToothGrowth)
+str(ToothGrowth)
+```
+
+`r dim(ToothGrowth)[1]` observations and `r dim(ToothGrowth)[2]` variables.
+
+From the help page we see, that `r names(ToothGrowth)[1]` represent Tooth length,
+`r names(ToothGrowth)[2]` - Supplement type (Orange juice - OJ, or ascorbic acid - VC)
+and `r names(ToothGrowth)[3]` - Dose in milligrams/day
+
+Let's see some piece of data
+
+```{r, echo=TRUE}
+head(ToothGrowth)
+summary(ToothGrowth)
+```
+
+There are two equal groups of pigs, separated by the supplement, and the dose ranged from .5 to 2 with the median of 1 milligrams/day
+
+Finally, make a plot of the tooth length by dose 
+
+```{r, fig.height= 2}
+ggplot(aes(x = supp, y = len), data = ToothGrowth) +
+    geom_boxplot(aes(fill = supp)) + facet_wrap(~ dose) +
+  ggtitle("Tooth length by the supplement dose") +
+  theme_minimal() +
+  theme(text=element_text(family="Times New Roman"),
+        plot.title = element_text(hjust = 0.5)) +
+  scale_fill_brewer(palette="Accent")
+```
+From the plot we see positive correlation between the amount of dose and the tooth growth. Also, orange juice seems to provide with better effect except the dose of 2, although not obvious whether the effect significant. For that, make a hypothesis test
+
+
+## Hypothesis test
+
+H0 - there is no difference in the mean
+H1 - the mean is different
+alpha = 5%
+
+
+
+```{r}
+t_full <- t.test(len ~ supp, data = ToothGrowth)
+t_full
+```
+p-value is `r t_full$p.value` which is larger than 0.05, so the NULL hypothesis cannot be rejected.
+Also, confidence interval is from `r t_full$conf.int[1]` to `r t_full$conf.int[2]`,
+zero is falling into it.
+
+For the sake of interest, make a hypothesis tests based on the specific supplement dose amount
+
+
+```{r}
+dose_05 <- subset(ToothGrowth, dose == 0.5)
+dose_1 <- subset(ToothGrowth, dose == 1)
+dose_2 <- subset(ToothGrowth, dose == 2)
+
+t_05 <- t.test(len ~ supp, data = dose_05)
+t_1 <- t.test(len ~ supp, data = dose_1)
+t_2 <- t.test(len ~ supp, data = dose_2)
+
+kable(data.frame("Dose" = c(0.5, 1, 2),
+           "P-value" = c(t_05$p.value, t_1$p.value, t_2$p.value),
+           "Conf.Interval.Low" = c(t_05$conf.int[1], t_1$conf.int[1], t_2$conf.int[1]),
+           "Conf.Interval.High" = c(t_05$conf.int[2], t_1$conf.int[2], t_2$conf.int[2])), 
+      "latex", booktabs = T) %>%
+  kable_styling(position = "center")
+```
+
+From the splitted test we see, that for the dose of 0.5 and 1 the p-value is very low, but for the last dose of 2 p-value is extremely high. This is quite surprising, ascorbic acid showed very good results on the high dose. I would recommend to conduct the experiment with more participants
+
+## Conclusion
+
+Results showed that dosage affect the tooth length, although supplement difference doesn't provide enough significance level with p-value of 0.06. On the high dosage of different supplement there is no difference, whereas on the lower dosage the significant level is very high
