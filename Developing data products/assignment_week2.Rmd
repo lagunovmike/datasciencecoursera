@@ -33,8 +33,8 @@ popClean <- popClean[-1,]
 popClean$city[1:10] <- c("Moscow", "St. Petersburg", "Novosibirsk", 
                      "Yekaterinburg", "Kazan", "Nizny Novrogod", "Chelyabinsk", 
                      "Samara", "Omsk", "Rostov-on-Don")
+popClean$city <- factor(popClean$city, levels = popClean$city)
 pop10 <- popClean[1:10,-c(1,2)]
-#pop10[1,1] <- "Москва"
 pop10[,2:20] <- sapply(pop10[,2:20], as.numeric)
 pop10 <- pop10 %>%
         pivot_longer(-city, names_to = "year", values_to = "population")
@@ -44,7 +44,7 @@ pop10$population <- pop10$population * 1000
 
 
 ```{r, echo = FALSE, out.width= "100%"}
-plot_ly(pop10, x = ~year, y = ~population, color = ~city, 
+plot_ly(pop10, x = ~year, y = ~population, color = ~factor(city), 
         type = "scatter", mode= "lines+markers") %>%
         layout(title="Population in cities across years")
 ```
