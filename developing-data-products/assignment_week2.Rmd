@@ -8,6 +8,11 @@ output:
     highlight: github
 ---
 
+```{css}
+.badCode {
+background-color: red;
+}
+
 ```{r, include=FALSE}
 library(rvest)
 library(tidyr)
@@ -71,5 +76,7 @@ cities %>%
 <br>
 
 ## About the data
-
+```{r cars, class.source="badCode"}
+print("hello")
+```
 The data has been taken from a wiki page: [wiki](`r link`)
