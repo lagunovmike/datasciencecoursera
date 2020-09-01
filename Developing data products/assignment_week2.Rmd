@@ -68,3 +68,6 @@ cities %>%
 
 ```
 
+## About the data
+
+The data has been taken from a wiki page: [wiki](`r link`)
