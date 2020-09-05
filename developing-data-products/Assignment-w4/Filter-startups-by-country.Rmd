@@ -1,0 +1,61 @@
+---
+title: "Filter startups by country"
+author: "Michael Lagunov"
+date: "9/5/2020"
+output: 
+  ioslides_presentation:
+    widescreen: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Background
+
+This project is a homework of Data Science Specialization by John Hopkins University, course of developing data products. The main goal is to practice new knowledge of making shiny applications.
+
+Current presentation is a complement to the shiny website, which you can find here:
+
+[https://michael-lagunov.shinyapps.io/Filter-startups-by-country](https://michael-lagunov.shinyapps.io/Filter-startups-by-country)
+
+## About project
+
+Running the application, you will be able to see startups separated by country. You have an opportunity to change a country to any you like
+
+Also, it is very interesting to see if there are any specific startup-cluster cities.
+For example in Russia, Moscow has almost a half of all the startups, that are in the database. In UK London has nearly 70%
+
+There may be some limitations due to the sample size
+
+## Data workflow {.smaller}
+
+1. Parse startups from open access websites, with `Rvest` library. I used [this website](https://innmind.com). Data were stored in a DB, but converted to CSV for this project. See the last slide for more info
+
+2. Made a shiny application, using ui.R and server.R files. A chunk of server.R file lies below, see the last slide for more info
+
+```{r, echo = TRUE, eval = FALSE}
+shinyServer(function(input, output, session) {
+    output$companies <- function() {
+        comp <-  companies %>% 
+            select(name, country, city, address) %>%
+            filter(country == input$Country) %>%
+            knitr::kable("html") %>%
+            kable_styling("striped", full_width = F)
+    }
+    tbl <- reactive({
+        companies %>%
+            filter(country == input$Country) %>%
+            group_by(city) %>%
+            summarize(freq = n(), .groups = "drop") %>%
+            arrange(desc(freq))
+    })
+    output$plot <- renderPlotly({
+        plot_ly(data = tbl(), values = ~freq, labels = ~city, type = "pie")
+    })
+})
+```
+
+## Resources
+
+
