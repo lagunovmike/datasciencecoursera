@@ -58,4 +58,6 @@ shinyServer(function(input, output, session) {
 
 ## Resources
 
-
+* [Github with shiny and presentation code](https://github.com/lagunovmike/datasciencecoursera/tree/master/developing-data-products/Assignment-w4)
+* [Parsing script](https://github.com/lagunovmike/Sandbox/blob/master/Startups-info/Parse_companies.R)
+* Contact me at lagunovmike@yahoo.com
